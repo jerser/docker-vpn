@@ -1,31 +1,22 @@
-FROM alpine:edge
+FROM ubuntu:latest
 
-RUN apk add --no-cache \
-    --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing/ \
-    openconnect \
-    && apk add --no-cache openvpn openssh \
-    && apk add --no-cache py3-pip \
-    && apk add --no-cache bind-tools curl \
-    && pip --no-cache-dir install pproxy supervisor
-
-# Fix Cannot open "/proc/sys/net/ipv4/route/flush": Read-only file system
-# See https://serverfault.com/questions/878443/when-running-vpnc-in-docker-get-cannot-open-proc-sys-net-ipv4-route-flush 
-RUN rm -f /etc/vpnc/vpnc-script \    
-    && wget https://gitlab.com/openconnect/vpnc-scripts/-/raw/master/vpnc-script -O /etc/vpnc/vpnc-script \
-    && chmod +x /etc/vpnc/vpnc-script
-    
-# create the root user's .ssh directory
-# unlock the root account
-RUN mkdir /root/.ssh \
-    && chmod 0700 /root/.ssh \
-    && sed -i 's/^root:!::0:::::/root:::0:::::/' /etc/shadow 
+ENV DEBIAN_FRONTEND=noninteractive     
+RUN apt-get update && apt-get install -y \
+     openconnect \
+     python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0 libcairo2-dev pkg-config python3-pip \
+     supervisor sudo \
+    && pip install https://github.com/dlenski/gp-saml-gui/archive/master.zip \
+    && pip install pproxy[accelerated] \
+    && apt-get clean autoclean \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/{apt,dpkg,cache,log}/
 
 COPY docker-entrypoint.sh /
-COPY etc/ssh/sshd_config /etc/ssh/
-COPY etc/supervisord.conf /etc/
+COPY supervisord.conf /etc/
+COPY interactive-openconnect.sh /
+RUN chmod +x /interactive-openconnect.sh
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
-VOLUME /etc/ssh/
-EXPOSE 22
 EXPOSE 1080
+ENV DISPLAY :0
