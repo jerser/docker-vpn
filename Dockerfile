@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 
-ENV DEBIAN_FRONTEND=noninteractive     
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
      openconnect \
      python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.0 libcairo2-dev pkg-config python3-pip \
